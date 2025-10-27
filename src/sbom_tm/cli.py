@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Annotated
 
 import typer
 
@@ -14,15 +14,38 @@ app = typer.Typer(help="SBOM threat modeller")
 
 @app.command()
 def scan(
-    sbom: Path = typer.Argument(
-        ..., exists=True, readable=True, help="Path to CycloneDX SBOM file"
-    ),
-    project: str = typer.Option("default", "--project", "-p", help="Project identifier"),
-    context: Optional[Path] = typer.Option(
-        None, "--context", exists=True, readable=True, help="Optional service context mapping JSON"
-    ),
-    offline: bool = typer.Option(False, "--offline", help="Use Trivy offline scan mode"),
+    path: Annotated[Optional[str], typer.Argument(exists=True, readable=True, help="Path to Project directory to generate SBOM from")] = None,
+    sbom: Annotated[Optional[Path], typer.Option(exists=True, readable=True, help="Path to CycloneDX SBOM file")] = None,
+    project: Annotated[str, typer.Option("--project", "-p", help="Project identifier")] = "default",
+    context: Annotated[Optional[Path], typer.Option(exists=True, readable=True, help="Optional service context mapping JSON")] = None,
+    offline: Annotated[bool, typer.Option(help="Use Trivy offline scan mode")] = False,
 ) -> None:
+    temp_sbom: Optional[Path] = None
+    import shutil
+    import subprocess
+    import tempfile
+
+    if sbom is None and path is None:
+        typer.echo("Please provide either --sbom <path> or --path <path>")
+        return
+    if sbom is None:
+        if shutil.which("syft") is None:
+            raise typer.BadParameter("syft not found in PATH. Install syft or provide --sbom <path>.")
+
+        typer.echo("[SBOM-TM] generating SBOM using syft...")
+        assert path is not None
+        proc = subprocess.run(["syft", str(path), "-o", "cyclonedx-json"], check=False, capture_output=True, text=True)
+        if proc.returncode != 0:
+            typer.echo(f"syft failed: {proc.stderr.strip()}")
+            raise typer.Exit(code=1)
+
+        tf = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        tf.write(proc.stdout.encode("utf-8"))
+        tf.flush()
+        tf.close()
+        temp_sbom = Path(tf.name)
+        sbom = temp_sbom
+
     typer.echo(f"[SBOM-TM] scanning SBOM: {sbom}")
     service = ScanService()
     result = service.run(sbom_path=sbom, project=project, context_path=context, offline=offline)
@@ -32,6 +55,12 @@ def scan(
     )
     typer.echo(f"[SBOM-TM] json report: {result.json_report}")
     typer.echo(f"[SBOM-TM] html report: {result.html_report}")
+
+    if temp_sbom is not None:
+        try:
+            temp_sbom.unlink()
+        except Exception:
+            pass
 
 
 @app.command()
@@ -45,8 +74,8 @@ def rules() -> None:
 
 @app.command()
 def serve(
-    host: str = typer.Option("127.0.0.1", "--host"),
-    port: int = typer.Option(8000, "--port"),
+    host: Annotated[str, typer.Option()] = "127.0.0.1",
+    port: Annotated[int, typer.Option()] = 8000,
 ) -> None:
     from uvicorn import run
 

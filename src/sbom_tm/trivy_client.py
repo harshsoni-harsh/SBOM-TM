@@ -18,12 +18,9 @@ def scan_sbom(sbom_path: Path, *, offline: bool = False) -> Dict[str, Any]:
     cmd = [
         settings.trivy_binary,
         "sbom",
-        "--file",
         str(sbom_path),
-        "--format",
+        "-f",
         "json",
-        "--cache-dir",
-        str(settings.cache_dir),
     ]
     if offline or settings.offline_scan:
         cmd.append("--offline-scan")
@@ -39,7 +36,7 @@ def scan_sbom(sbom_path: Path, *, offline: bool = False) -> Dict[str, Any]:
     except FileNotFoundError as exc:  # pragma: no cover
         raise TrivyError("Trivy binary not found. Install Trivy or set TRIVY_BIN.") from exc
 
-    if result.returncode != 0:
+    if result.returncode not in (0,1):
         raise TrivyError(result.stderr.strip() or "Trivy scan failed")
 
     return json.loads(result.stdout or "{}")
@@ -52,7 +49,7 @@ def extract_vulnerabilities(
     for item in report.get("Results", report.get("results", [])):
         vulnerabilities = item.get("Vulnerabilities") or item.get("vulnerabilities") or []
         for vuln in vulnerabilities:
-            purl = vuln.get("PkgID") or vuln.get("PkgIdentifier") or vuln.get("PURL")
+            purl = vuln.get("PkgIdentifier").get("PURL") if vuln.get("PkgIdentifier") else None
             pkg_name = vuln.get("PkgName") or vuln.get("packageName")
             key = (purl, pkg_name)
             mapping.setdefault(key, []).append(vuln)
