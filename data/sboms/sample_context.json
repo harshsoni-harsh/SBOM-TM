@@ -1,0 +1,29 @@
+[
+    {
+        "component_purl": "pkg:npm/lodash@4.17.15",
+        "service": "auth",
+        "environment": "production",
+        "internet_exposed": true,
+        "data_class": [
+            "tokens",
+            "user_profiles"
+        ],
+        "value_metric": "high",
+        "exposure": {
+            "internet": 1.0
+        }
+    },
+    {
+        "component_purl": "pkg:npm/express@4.18.2",
+        "service": "api",
+        "environment": "production",
+        "internet_exposed": true,
+        "data_class": [
+            "accounts"
+        ],
+        "value_metric": "medium",
+        "exposure": {
+            "internet": 1.0
+        }
+    }
+]

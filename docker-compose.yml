@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  sbom-tm:
+    build: .
+    image: sbom-tm:latest
+    container_name: sbom-tm
+    working_dir: /app
+    volumes:
+      - ./data:/app/data
+      - ./rules:/app/rules
+      - ./templates:/app/templates
+      - ./db:/app/db
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TRIVY_CACHE_DIR=/app/data/cache
+      - DB_PATH=/app/db/sbom_tm.sqlite
+      - RULES_DIR=/app/rules
+      - TEMPLATE_DIR=/app/templates
+      - REPORT_DIR=/app/data/reports
+    command: ["python", "src/main.py"]
+    stdin_open: true
+    tty: true

@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite
+.db/
+.env
+.venv/
+.pytest_cache/
+.mypy_cache/
+ruff_cache/
+.idea/
+.vscode/
+*.egg-info/
+data/
+db/
+.ruff_cache
+
+# for sample
+!data
+data/*
+!data/sboms/
+!data/sboms/*

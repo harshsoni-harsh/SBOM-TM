@@ -1,0 +1,125 @@
+[
+    {
+        "id": "R1",
+        "description": "High severity vulnerability in internet-exposed service",
+        "conditions": [
+            {
+                "vuln.Severity": {
+                    "in": [
+                        "HIGH",
+                        "CRITICAL"
+                    ]
+                }
+            },
+            {
+                "context.internet_exposed": true
+            }
+        ],
+        "result": {
+            "pattern": [
+                "use-of-vulnerable-dep"
+            ],
+            "objective": [
+                "remote-code-execution",
+                "data-exfiltration"
+            ],
+            "recommendations": [
+                {
+                    "type": "upgrade",
+                    "priority": "high"
+                },
+                {
+                    "type": "compensating",
+                    "action": "restrict-network-access"
+                }
+            ],
+            "pattern_multiplier": 1.2
+        },
+        "score_factors": {
+            "cvss_weight": 0.5,
+            "exploitability_weight": 0.3,
+            "asset_value_weight": 0.15,
+            "exposure_weight": 0.05
+        }
+    },
+    {
+        "id": "R2",
+        "description": "Active exploit available regardless of exposure",
+        "conditions": [
+            {
+                "vuln.Exploitability": {
+                    "eq": "ACTIVE"
+                }
+            }
+        ],
+        "result": {
+            "pattern": [
+                "active-exploit"
+            ],
+            "objective": [
+                "service-takeover"
+            ],
+            "recommendations": [
+                {
+                    "type": "patch",
+                    "priority": "immediate"
+                },
+                {
+                    "type": "monitor",
+                    "action": "enable-runtime-detection"
+                }
+            ],
+            "pattern_multiplier": 1.4
+        },
+        "score_factors": {
+            "cvss_weight": 0.4,
+            "exploitability_weight": 0.4,
+            "asset_value_weight": 0.15,
+            "exposure_weight": 0.05
+        }
+    },
+    {
+        "id": "R3",
+        "description": "High-value service with medium severity vulnerability",
+        "conditions": [
+            {
+                "vuln.Severity": {
+                    "in": [
+                        "MEDIUM",
+                        "HIGH"
+                    ]
+                }
+            },
+            {
+                "context.value_metric": {
+                    "eq": "high"
+                }
+            }
+        ],
+        "result": {
+            "pattern": [
+                "high-value-target"
+            ],
+            "objective": [
+                "data-theft"
+            ],
+            "recommendations": [
+                {
+                    "type": "upgrade",
+                    "priority": "medium"
+                },
+                {
+                    "type": "hardening",
+                    "action": "add-app-layer-waf"
+                }
+            ],
+            "pattern_multiplier": 1.1
+        },
+        "score_factors": {
+            "cvss_weight": 0.45,
+            "exploitability_weight": 0.25,
+            "asset_value_weight": 0.25,
+            "exposure_weight": 0.05
+        }
+    }
+]
