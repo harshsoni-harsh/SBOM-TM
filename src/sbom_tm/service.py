@@ -15,6 +15,8 @@ from .report_builder import write_html_report, write_json_report
 from .rule_engine import RuleEngine
 from .scorer import compute_score
 from .storage import session_scope
+from .threatintel_enricher import enrich_with_threatintel
+
 
 
 @dataclass(slots=True)
@@ -84,32 +86,61 @@ class ScanService:
                     "properties": parsed.properties,
                 }
 
-                for vuln in trivy_client.vulnerabilities_for_component(
-                    parsed.purl,
-                    parsed.name,
-                    vuln_index,
-                ):
+                raw_vulnerabilities = list(
+                    trivy_client.vulnerabilities_for_component(
+                        parsed.purl,
+                        parsed.name,
+                        vuln_index,
+                    )
+                )
+
+                if not raw_vulnerabilities:
+                    continue
+
+                enriched_payload = enrich_with_threatintel(
+                    [
+                        {
+                            "component": component_dict,
+                            "vulnerabilities": raw_vulnerabilities,
+                        }
+                    ]
+                )
+                enriched_vulnerabilities = (
+                    enriched_payload[0].get("vulnerabilities", raw_vulnerabilities)
+                    if enriched_payload
+                    else raw_vulnerabilities
+                )
+
+                for enriched_vuln in enriched_vulnerabilities:
                     vulnerability_count += 1
+
                     vuln_record = Vulnerability(
                         component_id=component_record.id,
-                        cve=_extract(vuln, ["VulnerabilityID", "cve"]),
-                        severity=_extract(vuln, ["Severity", "severity"]),
-                        cvss=_extract_cvss(vuln),
-                        exploit_maturity=_extract(vuln, ["Exploitability", "exploit_maturity"]),
-                        published=_extract(vuln, ["PublishedDate", "published"]),
-                        raw=vuln,
+                        cve=_extract(enriched_vuln, ["VulnerabilityID", "cve"]),
+                        severity=_extract(enriched_vuln, ["Severity", "severity"]),
+                        cvss=_extract_cvss(enriched_vuln),
+                        exploit_maturity=_extract(enriched_vuln, ["Exploitability", "exploit_maturity"]),
+                        published=_extract(enriched_vuln, ["PublishedDate", "published"]),
+                        raw=enriched_vuln,
                     )
                     session.add(vuln_record)
                     session.flush()
 
                     for hypothesis in self.rule_engine.evaluate(
-                        component_dict, vuln, service_context
+                        component_dict,
+                        enriched_vuln,
+                        service_context,
+                        threatintel=enriched_vuln.get("threatintel", {}),
                     ):
+                        rule_severity = hypothesis.get("rule_severity", "medium")
+                        severity_multiplier = {"low": 0.8, "medium": 1.0, "high": 1.2}.get(rule_severity, 1.0)
+
                         score = compute_score(
-                            vulnerability=vuln,
+                            vulnerability=enriched_vuln,
                             context=self._context_dict(service_context),
                             factors=hypothesis.get("score_factors", {}),
-                            pattern_multiplier=hypothesis.get("pattern_multiplier", 1.0),
+                            pattern_multiplier=hypothesis.get("pattern_multiplier", 1.0)
+                            * severity_multiplier,
                         )
                         threat_record = Threat(
                             project=project,
@@ -119,7 +150,7 @@ class ScanService:
                             score=score,
                             hypothesis=self._build_hypothesis_payload(
                                 component_dict,
-                                vuln,
+                                enriched_vuln,
                                 service_context,
                                 hypothesis,
                                 score,
@@ -194,6 +225,7 @@ class ScanService:
                 "severity": _extract(vulnerability, ["Severity", "severity"]),
                 "cvss": _extract_cvss(vulnerability),
                 "exploit_maturity": _extract(vulnerability, ["Exploitability", "exploit_maturity"]),
+                "intel": vulnerability.get("threatintel", {}),
             },
             "recommended_actions": hypothesis.get("recommendations", []),
             "score": score,
@@ -222,6 +254,6 @@ def _extract_cvss(payload: Dict[str, Any]) -> Optional[float]:
 
 def _safe_float(value: Any) -> Optional[float]:
     try:
-        return float(value)  # type: ignore[arg-type]
+        return float(value)
     except (TypeError, ValueError):
         return None

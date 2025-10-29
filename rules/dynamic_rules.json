@@ -1,0 +1,70 @@
+[
+  {
+    "id": "D1",
+    "description": "Known exploited vulnerability from CISA KEV",
+    "conditions": [
+      { "threatintel.kev_listed": true }
+    ],
+    "result": {
+      "pattern": ["known-exploited-cve"],
+      "objective": ["rapid-remediation"],
+      "recommendations": [
+        { "type": "patch", "priority": "critical" },
+        { "type": "isolate", "action": "restrict-access" }
+      ],
+      "pattern_multiplier": 1.5
+    },
+    "score_factors": {
+      "cvss_weight": 0.3,
+      "exploitability_weight": 0.4,
+      "intel_weight": 0.2,
+      "asset_value_weight": 0.1
+    }
+  },
+  {
+    "id": "D2",
+    "description": "High chatter vulnerability (indicating community concern)",
+    "conditions": [
+      { "threatintel.chatter_score": { "gte": 0.8 } },
+      { "vuln.Severity": { "in": ["HIGH", "CRITICAL"] } }
+    ],
+    "result": {
+      "pattern": ["active-threat-discussion"],
+      "objective": ["proactive-patch"],
+      "recommendations": [
+        { "type": "patch", "priority": "high" },
+        { "type": "monitor", "action": "enable-runtime-detection" }
+      ],
+      "pattern_multiplier": 1.3
+    },
+    "score_factors": {
+      "cvss_weight": 0.35,
+      "exploitability_weight": 0.35,
+      "intel_weight": 0.2,
+      "asset_value_weight": 0.1
+    }
+  },
+  {
+    "id": "D3",
+    "description": "Combination rule for exploited CVE in internet-exposed service",
+    "conditions": [
+      { "threatintel.kev_listed": true },
+      { "context.internet_exposed": true }
+    ],
+    "result": {
+      "pattern": ["internet-exposed-exploit"],
+      "objective": ["urgent-response"],
+      "recommendations": [
+        { "type": "patch", "priority": "critical" },
+        { "type": "network", "action": "limit-inbound-connections" }
+      ],
+      "pattern_multiplier": 1.7
+    },
+    "score_factors": {
+      "cvss_weight": 0.4,
+      "exploitability_weight": 0.4,
+      "intel_weight": 0.15,
+      "exposure_weight": 0.05
+    }
+  }
+]

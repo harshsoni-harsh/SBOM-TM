@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from typing import Any, Dict
 
 EXPLOITABILITY_MAP = {
@@ -57,8 +56,27 @@ def compute_score(
         + exposure_weight * exposure
     )
 
-    score = 100.0 * min(1.0, baseline * pattern_multiplier)
-    return round(score, 2)
+    threatintel = vulnerability.get("threatintel", {})
+    kev_listed = threatintel.get("kev_listed", False)
+    chatter_score = threatintel.get("chatter_score", 0.0)
+    threat_boost = 0.1 if kev_listed else chatter_score * 0.05 
+
+    rule_severity = vulnerability.get("rule_severity") or vulnerability.get("severity")
+    if isinstance(rule_severity, str):
+        rule_severity = rule_severity.lower()
+        if rule_severity == "critical":
+            rule_multiplier = 1.3
+        elif rule_severity == "high":
+            rule_multiplier = 1.15
+        elif rule_severity == "medium":
+            rule_multiplier = 1.0
+        else:
+            rule_multiplier = 0.8
+    else:
+        rule_multiplier = 1.0
+
+    final_score = 100.0 * min(1.0, (baseline + threat_boost) * pattern_multiplier * rule_multiplier)
+    return round(final_score, 2)
 
 
 def _safe_float(value: Any) -> float | None:

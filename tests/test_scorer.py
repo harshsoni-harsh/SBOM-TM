@@ -20,3 +20,10 @@ def test_compute_score_defaults():
     factors = {}
     score = compute_score(vuln, context, factors)
     assert 0 <= score <= 100
+def test_compute_score_handles_missing_values():
+    vuln = {}
+    context = {"value_metric": "medium"}
+    factors = {}
+    score = compute_score(vuln, context, factors)
+    assert isinstance(score, float)
+    assert score == 9 
