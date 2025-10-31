@@ -431,6 +431,8 @@ def generate_context_file(
     output_root.mkdir(parents=True, exist_ok=True)
 
     safe_service = profile.service_name.replace(" ", "-") or "service"
+    safe_service = safe_service.replace("/", "--")
+    safe_service = re.sub(r"[^a-zA-Z0-9\-_]", "", safe_service)
     output_path = output_root / f"{safe_service}_context.generated.json"
 
     payload = [

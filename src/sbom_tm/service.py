@@ -242,14 +242,26 @@ def _extract(payload: Dict[str, Any], keys: List[str]) -> Optional[str]:
 
 
 def _extract_cvss(payload: Dict[str, Any]) -> Optional[float]:
-    cvss = payload.get("CVSS") or payload.get("cvss")
-    if isinstance(cvss, (int, float)):
-        return float(cvss)
-    if isinstance(cvss, dict):
-        score = cvss.get("nvd") or cvss.get("Score") or cvss.get("score")
-        return _safe_float(score)
-    score = payload.get("CVSSScore") or payload.get("cvssScore")
-    return _safe_float(score)
+    scores = payload.get("CVSS") or payload.get("cvss")
+    if not isinstance(scores, dict):
+        return None
+
+    def _pick(entry: Any) -> Optional[float]:
+        if not isinstance(entry, dict):
+            return None
+        raw = entry.get("V3Score") or entry.get("V2Score")
+        return _safe_float(raw)
+
+    for provider in ("nvd", "ghsa"):
+        score = _pick(scores.get(provider))
+        if score is not None:
+            return score
+
+    for entry in scores.values():
+        score = _pick(entry)
+        if score is not None:
+            return score
+    return None
 
 
 def _safe_float(value: Any) -> Optional[float]:
