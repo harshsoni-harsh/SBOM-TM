@@ -1,70 +1,196 @@
 [
   {
-    "id": "D1",
-    "description": "Known exploited vulnerability from CISA KEV",
+    "id": "D-01",
+    "description": "Known exploited CVE affecting an internet-facing service",
+    "severity": "critical",
+    "last_updated": "2025-10-31",
     "conditions": [
-      { "threatintel.kev_listed": true }
+      {
+        "threatintel.kev_listed": true
+      },
+      {
+        "context.internet_exposed": true
+      },
+      {
+        "vuln.Severity": {
+          "in": [
+            "HIGH",
+            "CRITICAL"
+          ]
+        }
+      }
     ],
     "result": {
-      "pattern": ["known-exploited-cve"],
-      "objective": ["rapid-remediation"],
-      "recommendations": [
-        { "type": "patch", "priority": "critical" },
-        { "type": "isolate", "action": "restrict-access" }
+      "pattern": [
+        "known-exploited-cve",
+        "internet-exposed"
       ],
-      "pattern_multiplier": 1.5
-    },
-    "score_factors": {
-      "cvss_weight": 0.3,
-      "exploitability_weight": 0.4,
-      "intel_weight": 0.2,
-      "asset_value_weight": 0.1
-    }
-  },
-  {
-    "id": "D2",
-    "description": "High chatter vulnerability (indicating community concern)",
-    "conditions": [
-      { "threatintel.chatter_score": { "gte": 0.8 } },
-      { "vuln.Severity": { "in": ["HIGH", "CRITICAL"] } }
-    ],
-    "result": {
-      "pattern": ["active-threat-discussion"],
-      "objective": ["proactive-patch"],
-      "recommendations": [
-        { "type": "patch", "priority": "high" },
-        { "type": "monitor", "action": "enable-runtime-detection" }
+      "objective": [
+        "emergency-patch",
+        "containment"
       ],
-      "pattern_multiplier": 1.3
+      "recommendations": [
+        {
+          "type": "patch",
+          "priority": "critical"
+        },
+        {
+          "type": "network",
+          "action": "rate-limit-or-isolate"
+        },
+        {
+          "type": "monitor",
+          "action": "enable-waf-or-rules"
+        }
+      ],
+      "pattern_multiplier": 1.8
     },
     "score_factors": {
       "cvss_weight": 0.35,
       "exploitability_weight": 0.35,
       "intel_weight": 0.2,
-      "asset_value_weight": 0.1
+      "exposure_weight": 0.1
+    },
+    "metadata": {
+      "risk_context": [
+        "internet-facing",
+        "active-exploit"
+      ],
+      "response_sla_hours": 4
     }
   },
   {
-    "id": "D3",
-    "description": "Combination rule for exploited CVE in internet-exposed service",
+    "id": "D-02",
+    "description": "High community chatter and no vendor fix available",
+    "severity": "high",
+    "last_updated": "2025-10-31",
     "conditions": [
-      { "threatintel.kev_listed": true },
-      { "context.internet_exposed": true }
+      {
+        "threatintel.chatter_score": {
+          "gte": 0.7
+        }
+      },
+      {
+        "vuln.Severity": {
+          "in": [
+            "HIGH",
+            "CRITICAL"
+          ]
+        }
+      },
+      {
+        "match_type": "not_exists",
+        "field": "vuln.FixedVersion"
+      }
     ],
     "result": {
-      "pattern": ["internet-exposed-exploit"],
-      "objective": ["urgent-response"],
-      "recommendations": [
-        { "type": "patch", "priority": "critical" },
-        { "type": "network", "action": "limit-inbound-connections" }
+      "pattern": [
+        "active-threat-discussion",
+        "zero-day-watch"
       ],
-      "pattern_multiplier": 1.7
+      "objective": [
+        "proactive-hardening",
+        "accelerated-detection"
+      ],
+      "recommendations": [
+        {
+          "type": "mitigate",
+          "action": "apply-compensating-controls"
+        },
+        {
+          "type": "monitor",
+          "action": "increase-logging-and-alerting"
+        }
+      ],
+      "pattern_multiplier": 1.4
     },
     "score_factors": {
-      "cvss_weight": 0.4,
+      "cvss_weight": 0.3,
       "exploitability_weight": 0.4,
+      "intel_weight": 0.2,
+      "detection_weight": 0.1
+    },
+    "metadata": {
+      "risk_context": [
+        "high-interest",
+        "no-fix"
+      ],
+      "monitoring_priority": "elevated"
+    }
+  },
+  {
+    "id": "D-03",
+    "description": "Critical asset storing regulated data with remotely exploitable bug",
+    "severity": "high",
+    "last_updated": "2025-10-31",
+    "conditions": [
+      {
+        "context.value_metric": {
+          "in": [
+            "high",
+            "very-high"
+          ]
+        }
+      },
+      {
+        "context.data_class": {
+          "contains": "pii"
+        }
+      },
+      {
+        "vuln.AttackVector": {
+          "in": [
+            "NETWORK",
+            "ADJACENT_NETWORK"
+          ]
+        }
+      },
+      {
+        "vuln.Severity": {
+          "in": [
+            "HIGH",
+            "CRITICAL"
+          ]
+        }
+      }
+    ],
+    "result": {
+      "pattern": [
+        "regulated-data",
+        "remote-exploit"
+      ],
+      "objective": [
+        "protect-data",
+        "accelerated-remediation"
+      ],
+      "recommendations": [
+        {
+          "type": "patch",
+          "priority": "high"
+        },
+        {
+          "type": "monitor",
+          "action": "enable-dlp-or-siem-alerts"
+        },
+        {
+          "type": "mitigate",
+          "action": "tighten-access-controls"
+        }
+      ],
+      "pattern_multiplier": 1.5
+    },
+    "score_factors": {
+      "cvss_weight": 0.3,
+      "exploitability_weight": 0.3,
       "intel_weight": 0.15,
-      "exposure_weight": 0.05
+      "asset_value_weight": 0.25
+    },
+    "metadata": {
+      "risk_context": [
+        "regulated-data",
+        "remote-exploit"
+      ],
+      "response_sla_hours": 24
     }
   }
 ]

@@ -1,186 +1,189 @@
 [
-    {
-      "id": "R001",
-      "title": "Any CVE vulnerability",
-      "description": "Match any vulnerability entry that contains a CVE identifier.",
-      "scope": [
-        "vulnerability"
-      ],
-      "severity": "variable",
-      "condition": {
-        "match_type": "regex",
-        "field": "vuln.VulnerabilityID",
-        "pattern": "^CVE-\\d{4}-\\d{4,}$"
-      },
-      "remediation": "Refer to the CVE entry and apply vendor patch or upgrade package.",
-      "enabled": true,
-      "tags": [
-        "cve",
-        "vulnerability"
+  {
+    "id": "R001",
+    "title": "Any CVE vulnerability",
+    "description": "Match any vulnerability entry that contains a CVE identifier.",
+    "scope": [
+      "vulnerability"
+    ],
+    "severity": "variable",
+    "condition": {
+      "match_type": "regex",
+      "field": "vuln.VulnerabilityID",
+      "pattern": "^CVE-\\d{4}-\\d{4,}$"
+    },
+    "remediation": "Refer to the CVE entry and apply vendor patch or upgrade package.",
+    "enabled": true,
+    "tags": [
+      "cve",
+      "vulnerability"
+    ],
+    "last_updated": "2025-10-31"
+  },
+  {
+    "id": "R002",
+    "title": "High-or-Critical vulnerability",
+    "description": "Surface any vulnerability whose severity is HIGH or CRITICAL.",
+    "scope": [
+      "vulnerability"
+    ],
+    "severity": "high",
+    "condition": {
+      "match_type": "any_of",
+      "field": "vuln.Severity",
+      "values": [
+        "CRITICAL",
+        "critical",
+        "HIGH",
+        "high"
       ]
     },
-    {
-      "id": "R002",
-      "title": "High-or-Critical vulnerability",
-      "description": "Any vulnerability whose severity is HIGH or CRITICAL (case-insensitive) should be surfaced.",
-      "scope": [
-        "vulnerability"
-      ],
-      "severity": "high",
-      "condition": {
-        "match_type": "any_of",
-        "field": "vuln.Severity",
-        "values": [
-          "CRITICAL",
-          "critical",
-          "HIGH",
-          "high"
-        ]
-      },
-      "remediation": "Prioritize immediate remediation.",
-      "enabled": true,
-      "tags": [
-        "severity:high"
+    "remediation": "Prioritize immediate remediation.",
+    "enabled": true,
+    "tags": [
+      "severity:high"
+    ],
+    "last_updated": "2025-10-31"
+  },
+  {
+    "id": "R003",
+    "title": "Outdated package version",
+    "description": "Detect components that have an available fixed version in scanner data.",
+    "scope": [
+      "component",
+      "vulnerability"
+    ],
+    "severity": "medium",
+    "condition": {
+      "match_type": "version_lt_field",
+      "field": "component.version",
+      "compare_to": "vuln.FixedVersion"
+    },
+    "remediation": "Upgrade to the minimum fixed version provided by the vendor.",
+    "enabled": true,
+    "tags": [
+      "outdated",
+      "upgrade"
+    ],
+    "last_updated": "2025-10-31"
+  },
+  {
+    "id": "R004",
+    "title": "Incomplete SBOM metadata",
+    "description": "Flag components that lack key SBOM identifiers (name/version/purl).",
+    "scope": [
+      "component"
+    ],
+    "severity": "low",
+    "condition": {
+      "match_type": "missing_fields",
+      "fields": [
+        "component.name",
+        "component.version",
+        "component.purl"
       ]
     },
-    {
-      "id": "R003",
-      "title": "Outdated package version",
-      "description": "Detect packages that have a known fixed version indicated in scanner data.",
-      "scope": [
-        "package",
-        "vulnerability"
-      ],
-      "severity": "medium",
-      "condition": {
-        "match_type": "version_lt_field",
-        "field": "package.version",
-        "compare_to": "vulnerability.fixed_version"
-      },
-      "remediation": "Upgrade to the fixed/minimum safe version.",
-      "enabled": true,
-      "tags": [
-        "outdated",
-        "upgrade"
+    "remediation": "Generate a complete SBOM including name, version, and purl fields.",
+    "enabled": true,
+    "tags": [
+      "sbom-completeness"
+    ],
+    "last_updated": "2025-10-31"
+  },
+  {
+    "id": "R005",
+    "title": "Package with restrictive license",
+    "description": "Detect components that declare licenses incompatible with common distribution policies.",
+    "scope": [
+      "component"
+    ],
+    "severity": "info",
+    "condition": {
+      "match_type": "in_list",
+      "field": "component.properties.license",
+      "values": [
+        "GPL-2.0",
+        "GPL-3.0",
+        "AGPL-3.0"
       ]
     },
-    {
-      "id": "R004",
-      "title": "Unscanned or missing SBOM metadata",
-      "description": "Flag packages that lack name/version/purl in SBOM input.",
-      "scope": [
-        "package"
-      ],
-      "severity": "low",
-      "condition": {
-        "match_type": "missing_fields",
-        "fields": [
-          "package.name",
-          "package.version",
-          "package.purl"
-        ]
-      },
-      "remediation": "Generate full SBOM including name, version and purl.",
-      "enabled": true,
-      "tags": [
-        "sbom-completeness"
+    "remediation": "Review license obligations and obtain legal approval before deployment.",
+    "enabled": true,
+    "tags": [
+      "license"
+    ],
+    "last_updated": "2025-10-31"
+  },
+  {
+    "id": "R006",
+    "title": "Dependency missing purl",
+    "description": "Identify components that have names but no normalized purl.",
+    "scope": [
+      "component"
+    ],
+    "severity": "low",
+    "condition": {
+      "match_type": "and",
+      "subconditions": [
+        {
+          "match_type": "exists",
+          "field": "component.name"
+        },
+        {
+          "match_type": "not_exists",
+          "field": "component.purl"
+        }
       ]
     },
-    {
-      "id": "R005",
-      "title": "Package with known insecure license",
-      "description": "Detect packages that declare an insecure/undesired license.",
-      "scope": [
-        "package"
+    "remediation": "Normalize component metadata and include the package URL in the SBOM.",
+    "enabled": true,
+    "tags": [
+      "normalization"
+    ],
+    "last_updated": "2025-10-31"
+  },
+  {
+    "id": "R007",
+    "title": "Potential supply-chain artifact",
+    "description": "Flag components sourced from non-release artifacts (git SHAs, local paths).",
+    "scope": [
+      "component"
+    ],
+    "severity": "medium",
+    "condition": {
+      "match_type": "regex_any",
+      "fields": [
+        "component.properties.source",
+        "component.properties.download_location"
       ],
-      "severity": "info",
-      "condition": {
-        "match_type": "in_list",
-        "field": "package.license",
-        "values": [
-          "GPL-2.0-with-autoconf-exception",
-          "AGPL-3.0",
-          "GPL-3.0"
-        ]
-      },
-      "remediation": "Review license obligations.",
-      "enabled": true,
-      "tags": [
-        "license"
-      ]
+      "pattern": "(git@|https?://.*\\.git#|/local/|file://|sha1:|sha256:|commit:|#commit)",
+      "flags": "i"
     },
-    {
-      "id": "R006",
-      "title": "Dependency without purl but with coordinates",
-      "description": "If a package has group/name but no purl, flag it.",
-      "scope": [
-        "package"
-      ],
-      "severity": "low",
-      "condition": {
-        "match_type": "and",
-        "subconditions": [
-          {
-            "match_type": "exists",
-            "field": "package.group"
-          },
-          {
-            "match_type": "exists",
-            "field": "package.name"
-          },
-          {
-            "match_type": "not_exists",
-            "field": "package.purl"
-          }
-        ]
-      },
-      "remediation": "Add purl normalized from ecosystem coordinates.",
-      "enabled": true,
-      "tags": [
-        "normalization"
-      ]
+    "remediation": "Prefer released package versions from registries or trusted artifact stores.",
+    "enabled": true,
+    "tags": [
+      "supply-chain"
+    ],
+    "last_updated": "2025-10-31"
+  },
+  {
+    "id": "R999",
+    "title": "Catch-all: Any vulnerability-like entry",
+    "description": "Fallback rule that matches any item that looks like a vulnerability or has vulnerability fields.",
+    "scope": [
+      "vulnerability",
+      "component"
+    ],
+    "severity": "variable",
+    "condition": {
+      "match_type": "exists",
+      "field": "vulnerability"
     },
-    {
-      "id": "R007",
-      "title": "Potential supply-chain artifact",
-      "description": "Flag components that use non-released sources (git SHAs, local paths).",
-      "scope": [
-        "package",
-        "component"
-      ],
-      "severity": "medium",
-      "condition": {
-        "match_type": "regex_any",
-        "fields": [
-          "package.source",
-          "package.download_location"
-        ],
-        "pattern": "(git@|https?://.*\\.git#|/local/|file://|sha1:|sha256:|commit:|#commit)",
-        "flags": "i"
-      },
-      "remediation": "Prefer released package versions from registries.",
-      "enabled": true,
-      "tags": [
-        "supply-chain"
-      ]
-    },
-    {
-      "id": "R999",
-      "title": "Catch-all: Any vulnerability-like entry",
-      "description": "Fallback rule that matches any item that looks like a vulnerability or has vulnerability fields.",
-      "scope": [
-        "vulnerability",
-        "package"
-      ],
-      "severity": "variable",
-      "condition": {
-        "match_type": "exists",
-        "field": "vulnerability"
-      },
-      "remediation": "Review vulnerability details.",
-      "enabled": true,
-      "tags": [
-        "fallback"
-      ]
-    }
+    "remediation": "Review vulnerability details and triage manually.",
+    "enabled": true,
+    "tags": [
+      "fallback"
+    ],
+    "last_updated": "2025-10-31"
+  }
 ]
