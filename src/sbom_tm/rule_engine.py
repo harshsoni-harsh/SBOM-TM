@@ -71,14 +71,14 @@ class RuleEngine:
         lines.append("")
 
         # table header
-        lines.append("| Score | Rule | CVE | Component | Severity | KEV | Recommendations |")
-        lines.append("|---:|---|---|---|---|---|---|")
+        lines.append("| Score | Rule | CVE | Component | Severity | KEV | Recommendations | Links |")
+        lines.append("|---:|---|---|---|---|---|---|---|")
 
         for t in tlist:
             score = t.get("score")
             rule = t.get("rule_id") or t.get("rule") or "-"
             evidence = t.get("evidence") or {}
-            cve = evidence.get("cve") or "-"
+            cve = evidence.get("cve") or evidence.get("id") or "-"
             sev = evidence.get("severity") or t.get("rule_severity") or "-"
             comp = "-"
             try:
@@ -88,8 +88,8 @@ class RuleEngine:
             except Exception:
                 comp = "-"
 
-            intel = evidence.get("intel") or {}
-            kev = (
+            intel = evidence.get("intel") or t.get("threatintel") or {}
+            kev_flag = (
                 "✅" if intel.get("kev_listed") or intel.get("kev") or intel.get("cisa") else ""
             )
             intel_sources = ", ".join([str(s) for s in (intel.get("sources") or [])]) if intel.get("sources") else ""
@@ -112,7 +112,7 @@ class RuleEngine:
                 cve_md = f"[{cve}](https://nvd.nist.gov/vuln/detail/{cve})"
 
             # recommendations
-            recs = t.get("recommended_actions") or t.get("recommendations") or []
+            recs = t.get("recommended_actions") or t.get("recommendations") or t.get("recommended") or []
             if isinstance(recs, (list, tuple)):
                 rec_text = "<br>".join([str(r) if isinstance(r, str) else r.get("detail", str(r)) for r in recs])
             else:
@@ -122,7 +122,28 @@ class RuleEngine:
             if intel_note:
                 rec_text = f"{rec_text}<br>**Intel:** {intel_note}"
 
-            lines.append(f"| {score} | {rule} | {cve_md} | {comp} | {sev} | {kev} | {rec_text} |")
+            # collect additional links
+            links = []
+            # prefer advisory/vendor URL from intel
+            if isinstance(intel, dict):
+                if intel.get("advisory_url"):
+                    links.append(intel.get("advisory_url"))
+                if intel.get("vendor_url"):
+                    links.append(intel.get("vendor_url"))
+                if intel.get("kev"):
+                    # kev could be dict or string
+                    if isinstance(intel.get("kev"), dict):
+                        if intel.get("kev").get("url"):
+                            links.append(intel.get("kev").get("url"))
+                    else:
+                        links.append(str(intel.get("kev")))
+
+            if isinstance(cve, str) and cve.upper().startswith("CVE-"):
+                links.append(f"https://nvd.nist.gov/vuln/detail/{cve}")
+
+            links_md = ", ".join([f"[{l}]({l})" if isinstance(l, str) and l.startswith("http") else str(l) for l in links])
+
+            lines.append(f"| {score} | {rule} | {cve_md} | {comp} | {sev} | {kev_flag} | {rec_text} | {links_md} |")
 
         lines.append("")
         lines.append("---")

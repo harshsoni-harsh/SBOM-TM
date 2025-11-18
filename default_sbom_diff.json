@@ -1,12 +1,20 @@
 {
   "added_components": [
     "pkg:github/actions/checkout@v4",
-    "pkg:github/actions/setup-python@v5",
-    "pkg:github/actions/upload-artifact@v4",
-    "pkg:github/anchore/sbom-action@v0.16.0#download-syft",
-    "pkg:github/aquasecurity/setup-trivy@v0.4.0"
+    "pkg:github/docker/build-push-action@v4",
+    "pkg:github/docker/login-action@v2",
+    "pkg:github/docker/setup-buildx-action@v2",
+    "pkg:github/docker/setup-buildx-action@v3",
+    "pkg:github/docker/setup-qemu-action@v2",
+    "pkg:github/peter-evans/create-pull-request@v5",
+    "/tmp/tmpyl93t61a/.github/workflows/publish-ghcr.yml",
+    "/tmp/tmpyl93t61a/.github/workflows/publish.yml",
+    "/tmp/tmpyl93t61a/.github/workflows/release-publish-and-update-action.yml",
+    "/tmp/tmpyl93t61a/requirements.txt"
   ],
-  "removed_components": [],
+  "removed_components": [
+    "/tmp/tmpworvcjfh/requirements.txt"
+  ],
   "version_changes": [],
   "new_vulnerabilities": [],
   "rule_engine_threats": []

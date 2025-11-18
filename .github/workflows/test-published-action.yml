@@ -1,0 +1,27 @@
+name: Test Published SBOM-TM Action
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  run-sbom-tm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run SBOM-TM (published GHCR image)
+        # Use the image published to GHCR. Replace `H-strangeone` with your GHCR owner if different.
+        uses: docker://ghcr.io/H-strangeone/sbom-tm:latest
+        with:
+          # args are passed as a single string. This runs `sbom-tm diff --git` inside the container
+          args: diff --git default false sbom-tm-report.md
+
+      - name: Upload report (if produced)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-tm-report
+          path: sbom-tm-report.md

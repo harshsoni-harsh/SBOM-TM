@@ -306,13 +306,19 @@ def diff(
 
         if engine:
             try:
+                # ensure we materialize the threats generator/iterable
+                threats_list = threats if isinstance(threats, list) else list(threats)
+                diff_payload["rule_engine_threats"] = threats_list
                 md_report.write_text(
-                    engine.to_markdown(threats),
+                    engine.to_markdown(threats_list),
                     encoding="utf-8"
                 )
                 typer.echo(f"[sbom-tm] markdown diff report: {md_report}")
             except Exception as e:
                 typer.echo(f"[sbom-tm] WARNING: unable to write markdown report: {e}")
+        else:
+            # ensure the payload key exists even if engine not loaded
+            diff_payload["rule_engine_threats"] = []
 
         # Write diff report
         out = Path.cwd() / f"{project}_sbom_diff.json"
