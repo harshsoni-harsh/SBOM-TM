@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Inputs mapped from action.yml
 MODE="${INPUT_MODE:-auto}"
 BASE="${INPUT_BASE:-}"
 PROJECT="${INPUT_PROJECT:-default}"
@@ -13,7 +14,9 @@ EVENT_NAME="${GITHUB_EVENT_NAME:-}"
 cd "$WORKSPACE"
 
 OFFLINE_FLAG=()
-[[ "$OFFLINE" == "true" ]] && OFFLINE_FLAG+=(--offline)
+if [[ "$OFFLINE" == "true" ]]; then
+  OFFLINE_FLAG+=(--offline)
+fi
 
 EXIT_CODE=0
 
@@ -23,16 +26,30 @@ run_scan() {
 
 run_diff() {
   cmd=(sbom-tm diff --git --project "$PROJECT" "${OFFLINE_FLAG[@]}")
-  [[ -n "$BASE" ]] && cmd+=(--base "$BASE")
+  if [[ -n "$BASE" ]]; then
+    cmd+=(--base "$BASE")
+  fi
   "${cmd[@]}" || EXIT_CODE=$?
 }
 
-if [[ "$MODE" == "scan" ]]; then
+case "$MODE" in
+  scan)
     run_scan
-elif [[ "$MODE" == "diff" ]]; then
+    ;;
+  diff)
     run_diff
-else
-    [[ "$EVENT_NAME" == "pull_request" ]] && run_diff || run_scan
-fi
+    ;;
+  auto)
+    if [[ "$EVENT_NAME" == "pull_request" ]]; then
+      run_diff
+    else
+      run_scan
+    fi
+    ;;
+  *)
+    echo "::error::Invalid mode '$MODE'"
+    exit 1
+    ;;
+esac
 
 exit "$EXIT_CODE"

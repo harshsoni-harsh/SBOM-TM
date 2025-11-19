@@ -81,6 +81,8 @@ WORKDIR /app
 COPY pyproject.toml .
 COPY src ./src
 COPY templates ./templates
+RUN mkdir -p /usr/local/lib/python3.11/templates
+COPY templates/* /usr/local/lib/python3.11/templates/
 
 RUN pip install --no-cache-dir . 
 
